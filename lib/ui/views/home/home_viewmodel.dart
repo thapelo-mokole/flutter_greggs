@@ -1,14 +1,39 @@
 import 'package:flutter_greggs_app/app/app.locator.dart';
+import 'package:flutter_greggs_app/services/basket_api_service.dart';
+import 'package:flutter_greggs_app/services/mock_api_service.dart';
+import 'package:flutter_greggs_app/ui/models/product.dart';
 import 'package:stacked/stacked.dart';
-import 'package:stacked_services/stacked_services.dart';
 
-class HomeViewModel extends BaseViewModel {
-  String get counterLabel => 'Counter is: $_counter';
+class HomeViewModel extends FutureViewModel<void> {
+  final BasketApiService basketApiService = locator<BasketApiService>();
+  final MockApiService _mockApiService = locator<MockApiService>();
+  List<Product> products = [];
 
-  int _counter = 0;
+  Future<void> fetchData() async {
+    try {
+      setBusy(true);
+      var results = await _mockApiService.fetchProducts();
+      products.addAll(results);
+    } catch (e) {
+      throw Exception(e.toString());
+    } finally {
+      setBusy(false);
+    }
+  }
 
-  void incrementCounter() {
-    _counter++;
-    rebuildUi();
+  @override
+  Future<void> futureToRun() => fetchData();
+
+  @override
+  void onError(error) {}
+
+  void removeItem(String articleCode) {
+    basketApiService.removeItem(articleCode);
+    notifyListeners();
+  }
+
+  void addItem(String articleCode, String articleName, double eatInPrice) {
+    basketApiService.addItem(articleCode, articleName, eatInPrice);
+    notifyListeners();
   }
 }
